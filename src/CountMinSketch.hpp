@@ -19,7 +19,7 @@
 #include <algorithm>
 
 namespace MIDAS {
-struct EdgeHash {
+struct CountMinSketch {
 	// Fields
 	// --------------------------------------------------------------------------------
 
@@ -33,10 +33,10 @@ struct EdgeHash {
 	// Methods
 	// --------------------------------------------------------------------------------
 
-	EdgeHash() = delete;
-	EdgeHash& operator=(const EdgeHash& b) = delete;
+	CountMinSketch() = delete;
+	CountMinSketch& operator=(const CountMinSketch& b) = delete;
 
-	EdgeHash(int numRow, int numColumn):
+	CountMinSketch(int numRow, int numColumn):
 		r(numRow),
 		c(numColumn),
 		lenData(r * c),
@@ -50,7 +50,7 @@ struct EdgeHash {
 		std::fill(data, data + lenData, 0);
 	}
 
-	EdgeHash(const EdgeHash& b):
+	CountMinSketch(const CountMinSketch& b):
 		r(b.r),
 		c(b.c),
 		lenData(b.lenData),
@@ -62,7 +62,7 @@ struct EdgeHash {
 		std::copy(b.data, b.data + lenData, data);
 	}
 
-	~EdgeHash() {
+	~CountMinSketch() {
 		delete[] param1;
 		delete[] param2;
 		delete[] data;
@@ -73,10 +73,11 @@ struct EdgeHash {
 	}
 
 	void MultiplyAll(float by) const {
-		std::for_each(data, data + lenData, [&](float& a) { a *= by; }); // Magic of vectorization
+		for (int i = 0, I = lenData; i < I; i++) // Vectorization
+			data[i] *= by;
 	}
 
-	void Hash(int a, int b, int* indexOut) const {
+	void Hash(int* indexOut, int a, int b = 0) const {
 		for (int i = 0; i < r; i++) {
 			indexOut[i] = ((a + m * b) * param1[i] + param2[i]) % c;
 			indexOut[i] += i * c + (indexOut[i] < 0 ? c : 0);

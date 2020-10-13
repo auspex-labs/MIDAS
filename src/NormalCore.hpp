@@ -18,13 +18,13 @@
 
 #include <cmath>
 
-#include "EdgeHash.hpp"
+#include "CountMinSketch.hpp"
 
 namespace MIDAS {
 struct NormalCore {
-	int timestampCurrent = 1;
+	int timestamp = 1;
 	int* const index; // Pre-compute the index to-be-modified, thanks to the same structure of CMSs
-	EdgeHash numCurrent, numTotal;
+	CountMinSketch numCurrent, numTotal;
 
 	NormalCore(int numRow, int numColumn):
 		index(new int[numRow]),
@@ -40,11 +40,11 @@ struct NormalCore {
 	}
 
 	float operator()(int source, int destination, int timestamp) {
-		if (timestamp > timestampCurrent) {
+		if (this->timestamp < timestamp) {
 			numCurrent.ClearAll();
-			timestampCurrent = timestamp;
+			this->timestamp = timestamp;
 		}
-		numCurrent.Hash(source, destination, index);
+		numCurrent.Hash(index, source, destination);
 		numCurrent.Add(index);
 		numTotal.Add(index);
 		return ComputeScore(numCurrent(index), numTotal(index), timestamp);

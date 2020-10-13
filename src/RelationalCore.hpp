@@ -17,21 +17,19 @@
 #pragma once
 
 #include <cmath>
-#include <algorithm>
 
-#include "EdgeHash.hpp"
-#include "NodeHash.hpp"
+#include "CountMinSketch.hpp"
 
 namespace MIDAS {
 struct RelationalCore {
-	int timestampCurrent = 1;
+	int timestamp = 1;
 	const float factor;
 	int* const indexEdge; // Pre-compute the index to-be-modified, thanks to the same structure of CMSs
 	int* const indexSource;
 	int* const indexDestination;
-	EdgeHash numCurrentEdge, numTotalEdge;
-	NodeHash numCurrentSource, numTotalSource;
-	NodeHash numCurrentDestination, numTotalDestination;
+	CountMinSketch numCurrentEdge, numTotalEdge;
+	CountMinSketch numCurrentSource, numTotalSource;
+	CountMinSketch numCurrentDestination, numTotalDestination;
 
 	RelationalCore(int numRow, int numColumn, float factor = 0.5):
 		factor(factor),
@@ -56,19 +54,19 @@ struct RelationalCore {
 	}
 
 	float operator()(int source, int destination, int timestamp) {
-		if (timestamp > timestampCurrent) {
+		if (this->timestamp < timestamp) {
 			numCurrentEdge.MultiplyAll(factor);
 			numCurrentSource.MultiplyAll(factor);
 			numCurrentDestination.MultiplyAll(factor);
-			timestampCurrent = timestamp;
+			this->timestamp = timestamp;
 		}
-		numCurrentEdge.Hash(source, destination, indexEdge);
+		numCurrentEdge.Hash(indexEdge, source, destination);
 		numCurrentEdge.Add(indexEdge);
 		numTotalEdge.Add(indexEdge);
-		numCurrentSource.Hash(source, indexSource);
+		numCurrentSource.Hash(indexSource, source);
 		numCurrentSource.Add(indexSource);
 		numTotalSource.Add(indexSource);
-		numCurrentDestination.Hash(destination, indexDestination);
+		numCurrentDestination.Hash(indexDestination, destination);
 		numCurrentDestination.Add(indexDestination);
 		numTotalDestination.Add(indexDestination);
 		return std::max({
